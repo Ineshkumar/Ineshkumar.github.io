@@ -114,24 +114,14 @@
 <body>
   <div class="card">
     <aside class="news" aria-label="Latest news">
-      <!-- Add your photo at the top. Place a file named "Inesh_kumar.jpeg" next to index.html or update the src accordingly. -->
+      <!-- Profile photo and quick links -->
       <img src="Inesh_kumar.jpeg" alt="Inesh Kumar" class="profile-photo" />
       <div class="news-name">Inesh Kumar</div>
-
-      <h3>Latest News</h3>
-      <div class="news-item">
-        Kubernetes 1.30 released — improved scheduler performance.
-        <small>Jan 2026</small>
+      <div class="profile-links">
+        <a href="inesh_resume.pdf" target="_blank">Resume</a>
+        <a href="https://www.linkedin.com/in/inesh-kumar-50b170167/" target="_blank">LinkedIn</a>
       </div>
-      <div class="news-item">
-        Terraform 1.9 introduces finer drift detection.
-        <small>Dec 2025</small>
-      </div>
-      <div class="news-item">
-        Major enhancements to managed Prometheus offerings.
-        <small>Oct 2025</small>
-      </div>
-      <div style="margin-top:8px; font-size:0.85rem; color:#b9c8d6;">This panel will host curated links and short notes about noteworthy changes in DevOps & Cloud.</div>
+      <!-- latest-updates README will be loaded here by script -->
     </aside>
 
     <main class="main">
@@ -139,12 +129,7 @@
         <div>
           <h1>A chronological collection of short posts describing real issues, how they were diagnosed and resolved</h1>
          </div>
-
-         <nav class="links">
-          <a href="inesh_resume.pdf" target="_blank">Resume</a>
-          <a href="https://www.linkedin.com/in/inesh-kumar-50b170167/" target="_blank">LinkedIn</a>
-        </nav>
-      </header>
+       </header>
 
       <section id="journey">
         <!-- Year groups rendered by script -->
@@ -213,7 +198,8 @@
             item.addEventListener('click', async ()=>{
               const path = `./year-drafts/${year}/${entry.file}`;
               try{
-                const md = await loadMarkdown(path);
+                let md = await loadMarkdown(path);
+                md = normalizeRelativeLinks(md, `./year-drafts/${year}`);
                 currentPreviewMarkdown = md;
                 document.getElementById('modal-title').textContent = title;
                 document.getElementById('view-meta').textContent = entry.date ? `${entry.date} — ${entry.summary || ''}` : '';
@@ -286,6 +272,13 @@
     // Basic markdown renderer (small)
     function markdownToHtml(md){
       if(!md) return '';
+      // extract image markdown ![alt](src) into placeholders so they are not escaped
+      const images = [];
+      md = md.replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, function(m, alt, src){
+        const id = '___IMG_' + images.length + '___';
+        images.push({ id, alt, src });
+        return id;
+      });
       let out = escapeHtml(md);
       out = out.replace(/```([\s\S]*?)```/g, function(m, code){ return '<pre><code>' + code.replace(/</g,'&lt;') + '</code></pre>'; });
       out = out.replace(/^###### (.*$)/gim, '<h6>$1</h6>');
@@ -303,6 +296,14 @@
       out = out.replace(/\n{2,}/g, '</p><p>');
       out = '<p>' + out + '</p>';
       out = out.replace(/<p>\s*(<ul>)/g, '$1').replace(/(<\/ul>)\s*<\/p>/g, '$1');
+      // restore extracted images (insert raw <img> tags)
+      images.forEach(img => {
+        // img.src may already be a data: URI or a resolved path
+        const safeAlt = escapeHtml(img.alt || '');
+        const imgHtml = `<img src="${img.src}" alt="${safeAlt}" />`;
+        // replace placeholder id with imgHtml
+        out = out.split(img.id).join(imgHtml);
+      });
       return out;
     }
 
@@ -317,25 +318,37 @@
 
     renderJourney();
     // load latest-updates README into left panel (if available)
-    async function loadLatestUpdates(){
+     async function loadLatestUpdates(){
       const container = document.querySelector('.news');
       const target = document.createElement('div');
       target.className = 'news-content';
       try{
         const res = await fetch('./year-drafts/latest-updates/README.md');
         if(!res.ok) throw new Error('not found');
-        const md = await res.text();
+        let md = await res.text();
+        md = normalizeRelativeLinks(md, './year-drafts/latest-updates');
         target.innerHTML = markdownToHtml(md);
       }catch(e){
-        // leave existing static items as fallback
         target.innerHTML = '<div style="font-size:0.9rem;color:#9fb0bf">Latest updates unavailable (serve site via HTTP to preview local files)</div>';
       }
-      // remove any previous news-content and append
       const old = container.querySelector('.news-content');
       if(old) old.remove();
       container.appendChild(target);
     }
     loadLatestUpdates();
+
+    // Helper: rewrite relative image/link paths inside markdown so they resolve correctly when loaded from year-drafts
+    function normalizeRelativeLinks(md, basePath){
+      if(!md) return md;
+      // image or link paths that are relative (do not start with http://, https://, or /)
+      // replace patterns like ![alt](assets/x.png) or [text](assets/x.png)
+      return md.replace(/(!?\[[^\]]*\]\()(?!(?:https?:|\/))(.*?)\)/g, function(m, p1, p2){
+        // if path is absolute-ish or starts with ./ already, leave it
+        const trimmed = p2.trim();
+        const prefix = basePath.replace(/\/$/, '');
+        return p1 + prefix + '/' + trimmed + ')';
+      });
+    }
 
     // Note: To publish permanently, add markdown files under /posts and link from this page or convert this into a static site generator flow.
   </script>
