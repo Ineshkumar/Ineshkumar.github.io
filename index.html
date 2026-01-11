@@ -141,7 +141,7 @@
 
         <nav class="links">
           <a href="inesh_resume.pdf" target="_blank">Resume</a>
-          <a href="https://www.linkedin.com/" target="_blank">LinkedIn</a>
+          <a href="https://www.linkedin.com/in/inesh-kumar-50b170167/" target="_blank">LinkedIn</a>
         </nav>
       </header>
 
@@ -175,125 +175,108 @@
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Static posts — keep only 2026 for now (UI simplified per request)
-    const posts = [
-      { id:'post-2026', date: '2026-01-05', title: '2026 — Observability-first deployments', summary: 'Adopted end-to-end tracing and SLO-based deploy gates.', content: '# Observability-first deployments\nAdopted end-to-end tracing and SLO-based deploy gates.\n\n- Standardized tracing libraries\n- Gate deployments with SLOs\n' }
-    ];
+    // We'll display topics from year-drafts/2026. Create an index file at year-drafts/2026/index.json listing the markdown files to show.
+    const SITE_YEAR = '2026';
 
-    // Group posts by year descending
-    function renderJourney(){
-      const container = document.getElementById('journey');
-      container.innerHTML = '';
-      // sort posts by date desc
-      const sorted = posts.slice().sort((a,b) => (b.date || '').localeCompare(a.date || ''));
-      const groups = {};
-      sorted.forEach(p => {
-        const year = (p.date || '').slice(0,4) || 'Unknown';
-        groups[year] = groups[year] || [];
-        groups[year].push(p);
-      });
-
-      // years sorted desc (2026 first)
-      const years = Object.keys(groups).sort((a,b) => b.localeCompare(a));
-      const latestYear = years[0];
-      years.forEach(year => {
-        const grp = document.createElement('div');
-        grp.className = 'year-group';
-        // header with toggle indicator
-        grp.innerHTML = `<div class="year-header" role="button" aria-expanded="false"><div class="year-title">${year}</div><div class="toggle-indicator">▾</div></div>`;
-
-        const postsContainer = document.createElement('div');
-        postsContainer.className = 'posts';
-
-        groups[year].forEach(p => {
-          const item = document.createElement('div');
-          item.className = 'post-item';
-          item.setAttribute('tabindex','0');
-          item.innerHTML = `<div class="post-title">${escapeHtml(p.title)}</div><div class="post-summary">${escapeHtml(p.summary)}</div>`;
-          item.addEventListener('click', ()=> openPost(p.id));
-          item.addEventListener('keypress', (e)=>{ if(e.key === 'Enter') openPost(p.id); });
-          postsContainer.appendChild(item);
-        });
-
-        // Attempt to load year README from year-drafts (so edits to README.md are visible)
-        // Note: this works when files are served over HTTP (e.g., GitHub Pages or a local server). File:// may block fetch.
-        (function(){
-          const readmePath = `./year-drafts/${year}/README.md`;
-          fetch(readmePath).then(res => {
-            if(!res.ok) throw new Error('not found');
-            return res.text();
-          }).then(md => {
-            const draftItem = document.createElement('div');
-            draftItem.className = 'post-item';
-            draftItem.setAttribute('tabindex','0');
-            draftItem.innerHTML = `<div class="post-title">Drafts for ${year}</div><div class="post-summary">Open year drafts (README.md)</div>`;
-            draftItem.addEventListener('click', ()=>{
-              document.getElementById('modal-title').textContent = `${year} — Drafts`;
-              document.getElementById('view-meta').textContent = '';
-              // wrap README content in a white "readme-wrapper" so screenshots and code blocks are readable
-              document.getElementById('view-content').innerHTML = '<div class="readme-wrapper">' + markdownToHtml(md || '') + '</div>';
-              document.getElementById('modal').classList.add('open');
-            });
-            draftItem.addEventListener('keypress', (e)=>{ if(e.key === 'Enter') draftItem.click(); });
-            // insert at top of posts for the year
-            postsContainer.insertBefore(draftItem, postsContainer.firstChild);
-          }).catch(()=>{
-            // ignore silently — README not present or fetch blocked (file://). If fetch fails due to file://, show a hint button to explain.
-            // If running locally via file:// you won't be able to fetch; serve with a local server: `python -m http.server`.
-            if(location.protocol === 'file:'){
-              const hint = document.createElement('div');
-              hint.className = 'post-item';
-              hint.style.opacity = '0.85';
-              hint.innerHTML = `<div class="post-title">Drafts available in repository</div><div class="post-summary">To preview README.md content here, run a local HTTP server (e.g. \`python -m http.server\`) or publish to GitHub Pages.</div>`;
-              postsContainer.insertBefore(hint, postsContainer.firstChild);
-            }
-          });
-        })();
-
-        grp.appendChild(postsContainer);
-
-        // open only the latest year by default
-        if(year === latestYear){
-          grp.classList.add('open');
-          grp.querySelector('.year-header').setAttribute('aria-expanded','true');
-        }
-
-        // toggle behavior
-        grp.querySelector('.year-header').addEventListener('click', ()=>{
-          const open = grp.classList.toggle('open');
-          grp.querySelector('.year-header').setAttribute('aria-expanded', open ? 'true' : 'false');
-        });
-
-        container.appendChild(grp);
-      });
+    // load a markdown file and return text (works when served over HTTP)
+    async function loadMarkdown(path){
+      const res = await fetch(path);
+      if(!res.ok) throw new Error('not found');
+      return res.text();
     }
 
-    function openPost(id){
-      const post = posts.find(p => p.id === id);
-      if(!post) return;
-      document.getElementById('modal-title').textContent = post.title;
-      document.getElementById('view-meta').textContent = `${post.date || ''} — ${post.summary || ''}`;
-      // track current markdown for full-page view
-      currentPreviewMarkdown = post.content || '';
-      document.getElementById('view-content').innerHTML = '<div class="readme-wrapper">' + markdownToHtml(post.content || '') + '</div>';
-      document.getElementById('modal').classList.add('open');
+    // Render a single year (SITE_YEAR) and list markdown files defined in year-drafts/SITE_YEAR/index.json.
+    async function renderJourney(){
+      const container = document.getElementById('journey');
+      container.innerHTML = '';
+      const year = SITE_YEAR;
+      const grp = document.createElement('div');
+      grp.className = 'year-group';
+      grp.innerHTML = `<div class="year-header" role="button" aria-expanded="false"><div class="year-title">${year}</div><div class="toggle-indicator">▾</div></div>`;
+      const postsContainer = document.createElement('div');
+      postsContainer.className = 'posts';
+
+      // Try to load index.json which lists files to display
+      const indexPath = `./year-drafts/${year}/index.json`;
+      try{
+        const idxText = await loadMarkdown(indexPath); // it's JSON
+        const idx = JSON.parse(idxText);
+        if(Array.isArray(idx)){
+          idx.forEach(entry => {
+            const item = document.createElement('div');
+            item.className = 'post-item';
+            item.setAttribute('tabindex','0');
+            const title = entry.title || entry.file || 'Untitled';
+            const summary = entry.summary || (entry.date ? entry.date : '');
+            item.innerHTML = `<div class="post-title">${escapeHtml(title)}</div><div class="post-summary">${escapeHtml(summary)}</div>`;
+            item.addEventListener('click', async ()=>{
+              const path = `./year-drafts/${year}/${entry.file}`;
+              try{
+                const md = await loadMarkdown(path);
+                currentPreviewMarkdown = md;
+                document.getElementById('modal-title').textContent = title;
+                document.getElementById('view-meta').textContent = entry.date ? `${entry.date} — ${entry.summary || ''}` : '';
+                document.getElementById('view-content').innerHTML = '<div class="readme-wrapper">' + markdownToHtml(md || '') + '</div>';
+                document.getElementById('modal').classList.add('open');
+              }catch(e){
+                alert('Failed to load file: ' + path + '\n' + e.message);
+              }
+            });
+            item.addEventListener('keypress', (e)=>{ if(e.key === 'Enter') item.click(); });
+            postsContainer.appendChild(item);
+          });
+        }
+      }catch(e){
+        // fallback: try to show README.md (if available) or provide hint about running a local server
+        try{
+          const md = await loadMarkdown(`./year-drafts/${year}/README.md`);
+          const draftItem = document.createElement('div');
+          draftItem.className = 'post-item';
+          draftItem.setAttribute('tabindex','0');
+          draftItem.innerHTML = `<div class="post-title">${year} — Drafts</div><div class="post-summary">Open year README</div>`;
+          draftItem.addEventListener('click', ()=>{
+            currentPreviewMarkdown = md;
+            document.getElementById('modal-title').textContent = `${year} — Drafts`;
+            document.getElementById('view-meta').textContent = '';
+            document.getElementById('view-content').innerHTML = '<div class="readme-wrapper">' + markdownToHtml(md || '') + '</div>';
+            document.getElementById('modal').classList.add('open');
+          });
+          postsContainer.appendChild(draftItem);
+        }catch(_){
+          const hint = document.createElement('div');
+          hint.className = 'post-item';
+          hint.style.opacity = '0.9';
+          hint.innerHTML = `<div class="post-title">Drafts available in repository</div><div class="post-summary">To preview individual files, add an index.json in year-drafts/${year} listing markdown files, and serve the site over HTTP (e.g. python3 -m http.server).</div>`;
+          postsContainer.appendChild(hint);
+        }
+      }
+
+      grp.appendChild(postsContainer);
+      // open by default
+      grp.classList.add('open');
+      grp.querySelector('.year-header').setAttribute('aria-expanded','true');
+      grp.querySelector('.year-header').addEventListener('click', ()=>{
+        const open = grp.classList.toggle('open');
+        grp.querySelector('.year-header').setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+      container.appendChild(grp);
     }
 
     // track the currently-loaded markdown shown in the modal (for opening full page)
-    let currentPreviewMarkdown = '';
+     let currentPreviewMarkdown = '';
 
-    document.getElementById('open-full').addEventListener('click', ()=>{
-      if(!currentPreviewMarkdown) return;
-      openFullPage(currentPreviewMarkdown, document.getElementById('modal-title').textContent || 'Draft');
-    });
+     document.getElementById('open-full').addEventListener('click', ()=>{
+       if(!currentPreviewMarkdown) return;
+       openFullPage(currentPreviewMarkdown, document.getElementById('modal-title').textContent || 'Draft');
+     });
 
-    function openFullPage(md, title){
-      const w = window.open('', '_blank');
-      if(!w) return alert('Popup blocked — allow popups for this site to open full page.');
-      const doc = w.document;
-      const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,sans-serif;margin:0;padding:28px;background:#fff;color:#0b2540} .container{max-width:900px;margin:24px auto;padding:28px;border-radius:8px;background:#fff;box-shadow:0 6px 30px rgba(11,37,64,0.06)} h1{font-size:2.2rem;margin-top:0} h2{font-size:1.6rem} pre{background:#f6f7f9;padding:12px;border-radius:6px;overflow:auto} code{background:#f3f4f6;padding:2px 6px;border-radius:4px} img{max-width:100%;height:auto;border-radius:6px} a{color:#0b5cff}</style></head><body><div class="container"><h1>${escapeHtml(title)}</h1>` + markdownToHtml(md) + `</div></body></html>`;
-      doc.open(); doc.write(html); doc.close();
-    }
+     function openFullPage(md, title){
+       const w = window.open('', '_blank');
+       if(!w) return alert('Popup blocked — allow popups for this site to open full page.');
+       const doc = w.document;
+       const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,sans-serif;margin:0;padding:28px;background:#fff;color:#0b2540} .container{max-width:900px;margin:24px auto;padding:28px;border-radius:8px;background:#fff;box-shadow:0 6px 30px rgba(11,37,64,0.06)} h1{font-size:2.2rem;margin-top:0} h2{font-size:1.6rem} pre{background:#f6f7f9;padding:12px;border-radius:6px;overflow:auto} code{background:#f3f4f6;padding:2px 6px;border-radius:4px} img{max-width:100%;height:auto;border-radius:6px} a{color:#0b5cff}</style></head><body><div class="container"><h1>${escapeHtml(title)}</h1>` + markdownToHtml(md) + `</div></body></html>`;
+       doc.open(); doc.write(html); doc.close();
+     }
 
     function closeModal(){ document.getElementById('modal').classList.remove('open'); }
     document.getElementById('close-modal').addEventListener('click', closeModal);

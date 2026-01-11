@@ -1,0 +1,20 @@
+[
+  {
+    "file": "2026-issue-1.md",
+    "title": "Observability-first deployments",
+    "date": "2026-01-05",
+    "summary": "Adopted end-to-end tracing and SLO-based deploy gates"
+  },
+  {
+    "file": "2026-issue-2.md",
+    "title": "Terraform drift at scale",
+    "date": "2025-06-10",
+    "summary": "Lessons from managing 1000+ workspaces"
+  },
+  {
+    "file": "README.md",
+    "title": "Readme",
+    "date": "",
+    "summary": ""
+  }
+]
