@@ -64,6 +64,10 @@
     .links a { display:inline-block; margin-left:10px; padding:6px 10px; border-radius:999px; text-decoration:none; color:#fff; border:1px solid rgba(255,255,255,0.12); font-size:0.88rem; }
     .links a:hover { background:#fff; color:#0f2027; }
 
+    /* Ensure links are shown in a row and aligned */
+    .links { display:flex; gap:8px; align-items:center; }
+    .links a { margin-left:0; }
+
     /* Journey timeline */
     .year-group { margin-bottom: 12px; border-radius:8px; overflow:hidden; }
     .year-header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background: rgba(255,255,255,0.02); cursor:pointer; border:1px solid rgba(255,255,255,0.02); }
@@ -91,7 +95,9 @@
 
     /* README preview styling (scoped inside modal) */
     .readme-wrapper { background: #ffffff; color: #0f1720; border-radius: 8px; padding: 16px; line-height: 1.6; }
-    .readme-wrapper h1, .readme-wrapper h2, .readme-wrapper h3 { color: #0b2540; }
+    .readme-wrapper h1, .readme-wrapper h2, .readme-wrapper h3 { color: #0b2540; font-weight:800; }
+    .readme-wrapper h1 { font-size: 1.8rem; margin-top: 0; }
+    .readme-wrapper h2 { font-size: 1.4rem; }
     .readme-wrapper p { color: #123; }
     .readme-wrapper img { max-width: 100%; height: auto; border-radius:6px; margin:10px 0; display:block; }
     .readme-wrapper pre { background:#f3f4f6; color:#111; padding:10px; border-radius:6px; overflow:auto; }
@@ -155,6 +161,7 @@
       <div class="modal-header">
         <strong id="modal-title">Post</strong>
         <div>
+          <button id="open-full" class="close-btn" style="margin-right:8px;">Open full page</button>
           <button id="close-modal" class="close-btn">Close</button>
         </div>
       </div>
@@ -168,20 +175,9 @@
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    // Static posts — one sample post per year (2026 down to 2015)
+    // Static posts — keep only 2026 for now (UI simplified per request)
     const posts = [
-      { id:'post-2026', date: '2026-01-05', title: '2026 — Observability-first deployments', summary: 'Shifting to observability-driven deployment decisions.', content: '# 2026 Observability\nAdopted end-to-end tracing and SLO-based deploy gates.\n\n- Implemented distributed tracing across services.\n- Gate deployments with error-budget awareness.\n' },
-      { id:'post-2025', date: '2025-06-10', title: '2025 — Terraform drift at scale', summary: 'Lessons from managing 1000+ workspaces', content: '# 2025 Terraform at Scale\nEncountered drift across environments; improved state hygiene and introduced drift detection jobs.\n\n- Regular state scans\n- Orchestrated plan reviews\n' },
-      { id:'post-2024', date: '2024-08-18', title: '2024 — CI flakiness due to caching', summary: 'Cache invalidation in pipelines caused inconsistent artifacts.', content: '# 2024 CI Cache Issues\nFixed flaky builds by isolating cache keys and adding verification steps.\n\n- Use immutable artifact names\n- Validate checksums\n' },
-      { id:'post-2023', date: '2023-04-22', title: '2023 — Incident: Network partition in prod', summary: 'How we mitigated a multi-region partition.', content: '# 2023 Network Partition\nTraffic routing rules caused region-isolation; fallback strategies reduced downtime.\n\n- Implemented resilient DNS failover\n- Added cross-region health checks\n' },
-      { id:'post-2022', date: '2022-11-02', title: '2022 — Secrets leakage prevention', summary: 'Adopted vault-based secret rotation.', content: '# 2022 Secrets\nMoved secrets to a vault with short-lived credentials and rotation.\n\n- Remove static tokens\n- Automate rotation\n' },
-      { id:'post-2021', date: '2021-07-09', title: '2021 — Container image supply chain', summary: 'Securing builds and base images.', content: '# 2021 Supply Chain\nIntroduced signed images and provenance checks.\n\n- Sign images\n- Reproduceable builds\n' },
-      { id:'post-2020', date: '2020-05-14', title: '2020 — Remote-first SRE practices', summary: 'Scaling on-call and runbooks for distributed teams.', content: '# 2020 SRE Remote\nUpdated runbooks and automated toil reduction.\n\n- Standardized runbooks\n- Automate common remediation\n' },
-      { id:'post-2019', date: '2019-10-30', title: '2019 — Migrating to Kubernetes', summary: 'Challenges migrating stateful services.', content: '# 2019 K8s Migration\nStateful workloads required careful storage planning and rollout strategies.\n\n- Use statefulsets where appropriate\n- Blue/green for DB migrations\n' },
-      { id:'post-2018', date: '2018-03-12', title: '2018 — Logging at scale', summary: 'Centralized logging and retention policies.', content: '# 2018 Logging\nImplemented centralized ELK stack and retention tiers.\n\n- Index only necessary fields\n- Use lifecycle policies\n' },
-      { id:'post-2017', date: '2017-09-05', title: '2017 — Infrastructure as Code', summary: 'Adopting IaC and modular stacks.', content: '# 2017 IaC\nModularized stacks and introduced reusable modules.\n\n- Module catalog\n- Policy checks\n' },
-      { id:'post-2016', date: '2016-02-20', title: '2016 — CI/CD foundations', summary: 'Building reliable pipelines and artifact stores.', content: '# 2016 CI/CD\nStandardized pipelines and artifact retention.\n\n- Immutable artifacts\n- Promote via stages\n' },
-      { id:'post-2015', date: '2015-11-11', title: '2015 — First Steps: from VMs to automation', summary: 'Started automating server provisioning.', content: '# 2015 First Steps\nScripted provisioning and configuration management laid the groundwork.\n\n- Use reproducible provisioning\n- Start small and iterate\n' }
+      { id:'post-2026', date: '2026-01-05', title: '2026 — Observability-first deployments', summary: 'Adopted end-to-end tracing and SLO-based deploy gates.', content: '# Observability-first deployments\nAdopted end-to-end tracing and SLO-based deploy gates.\n\n- Standardized tracing libraries\n- Gate deployments with SLOs\n' }
     ];
 
     // Group posts by year descending
@@ -277,8 +273,26 @@
       if(!post) return;
       document.getElementById('modal-title').textContent = post.title;
       document.getElementById('view-meta').textContent = `${post.date || ''} — ${post.summary || ''}`;
-      document.getElementById('view-content').innerHTML = markdownToHtml(post.content || '');
+      // track current markdown for full-page view
+      currentPreviewMarkdown = post.content || '';
+      document.getElementById('view-content').innerHTML = '<div class="readme-wrapper">' + markdownToHtml(post.content || '') + '</div>';
       document.getElementById('modal').classList.add('open');
+    }
+
+    // track the currently-loaded markdown shown in the modal (for opening full page)
+    let currentPreviewMarkdown = '';
+
+    document.getElementById('open-full').addEventListener('click', ()=>{
+      if(!currentPreviewMarkdown) return;
+      openFullPage(currentPreviewMarkdown, document.getElementById('modal-title').textContent || 'Draft');
+    });
+
+    function openFullPage(md, title){
+      const w = window.open('', '_blank');
+      if(!w) return alert('Popup blocked — allow popups for this site to open full page.');
+      const doc = w.document;
+      const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)}</title><style>body{font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Ubuntu,sans-serif;margin:0;padding:28px;background:#fff;color:#0b2540} .container{max-width:900px;margin:24px auto;padding:28px;border-radius:8px;background:#fff;box-shadow:0 6px 30px rgba(11,37,64,0.06)} h1{font-size:2.2rem;margin-top:0} h2{font-size:1.6rem} pre{background:#f6f7f9;padding:12px;border-radius:6px;overflow:auto} code{background:#f3f4f6;padding:2px 6px;border-radius:4px} img{max-width:100%;height:auto;border-radius:6px} a{color:#0b5cff}</style></head><body><div class="container"><h1>${escapeHtml(title)}</h1>` + markdownToHtml(md) + `</div></body></html>`;
+      doc.open(); doc.write(html); doc.close();
     }
 
     function closeModal(){ document.getElementById('modal').classList.remove('open'); }
