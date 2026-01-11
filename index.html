@@ -46,6 +46,8 @@
     .news h3 { margin: 0 0 8px; font-size: 1.05rem; }
     .news-item { font-size: 0.92rem; color: #d7e3ee; margin-bottom: 10px; }
     .news-item small { display:block; color:#9fb0bf; margin-top:4px; }
+    .news .news-content { margin-top:8px; background: rgba(255,255,255,0.02); padding:10px; border-radius:8px; color:#d7e3ee; font-size:0.92rem; }
+    .news .news-content img { max-width:100%; height:auto; display:block; margin:8px 0; border-radius:6px; }
 
     /* Main content area */
     .main { flex:1; }
@@ -135,11 +137,10 @@
     <main class="main">
       <header>
         <div>
-          <h1>Inesh Kumar — Journey (2015 → 2026)</h1>
-          <div class="intro">A chronological collection of short posts describing real issues, how they were diagnosed and resolved across 7+ years.</div>
-        </div>
+          <h1>A chronological collection of short posts describing real issues, how they were diagnosed and resolved</h1>
+         </div>
 
-        <nav class="links">
+         <nav class="links">
           <a href="inesh_resume.pdf" target="_blank">Resume</a>
           <a href="https://www.linkedin.com/in/inesh-kumar-50b170167/" target="_blank">LinkedIn</a>
         </nav>
@@ -315,6 +316,26 @@
     }
 
     renderJourney();
+    // load latest-updates README into left panel (if available)
+    async function loadLatestUpdates(){
+      const container = document.querySelector('.news');
+      const target = document.createElement('div');
+      target.className = 'news-content';
+      try{
+        const res = await fetch('./year-drafts/latest-updates/README.md');
+        if(!res.ok) throw new Error('not found');
+        const md = await res.text();
+        target.innerHTML = markdownToHtml(md);
+      }catch(e){
+        // leave existing static items as fallback
+        target.innerHTML = '<div style="font-size:0.9rem;color:#9fb0bf">Latest updates unavailable (serve site via HTTP to preview local files)</div>';
+      }
+      // remove any previous news-content and append
+      const old = container.querySelector('.news-content');
+      if(old) old.remove();
+      container.appendChild(target);
+    }
+    loadLatestUpdates();
 
     // Note: To publish permanently, add markdown files under /posts and link from this page or convert this into a static site generator flow.
   </script>

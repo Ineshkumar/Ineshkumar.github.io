@@ -10,11 +10,5 @@
     "title": "Terraform drift at scale",
     "date": "2025-06-10",
     "summary": "Lessons from managing 1000+ workspaces"
-  },
-  {
-    "file": "README.md",
-    "title": "Readme",
-    "date": "",
-    "summary": ""
   }
 ]
