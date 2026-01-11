@@ -89,6 +89,14 @@
     .modal-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
     .close-btn { background:transparent; border:1px solid rgba(255,255,255,0.08); color:#fff; padding:6px 10px; border-radius:8px; cursor:pointer; }
 
+    /* README preview styling (scoped inside modal) */
+    .readme-wrapper { background: #ffffff; color: #0f1720; border-radius: 8px; padding: 16px; line-height: 1.6; }
+    .readme-wrapper h1, .readme-wrapper h2, .readme-wrapper h3 { color: #0b2540; }
+    .readme-wrapper p { color: #123; }
+    .readme-wrapper img { max-width: 100%; height: auto; border-radius:6px; margin:10px 0; display:block; }
+    .readme-wrapper pre { background:#f3f4f6; color:#111; padding:10px; border-radius:6px; overflow:auto; }
+    .readme-wrapper code { background:#f3f4f6; color:#111; padding:2px 6px; border-radius:4px; }
+
     @media (max-width:900px){
       .card { flex-direction:column; }
       .news { width:100%; }
@@ -226,7 +234,8 @@
             draftItem.addEventListener('click', ()=>{
               document.getElementById('modal-title').textContent = `${year} — Drafts`;
               document.getElementById('view-meta').textContent = '';
-              document.getElementById('view-content').innerHTML = markdownToHtml(md || '');
+              // wrap README content in a white "readme-wrapper" so screenshots and code blocks are readable
+              document.getElementById('view-content').innerHTML = '<div class="readme-wrapper">' + markdownToHtml(md || '') + '</div>';
               document.getElementById('modal').classList.add('open');
             });
             draftItem.addEventListener('keypress', (e)=>{ if(e.key === 'Enter') draftItem.click(); });
